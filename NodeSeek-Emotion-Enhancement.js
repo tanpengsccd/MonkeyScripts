@@ -8,8 +8,8 @@
 // @icon         https://www.nodeseek.com/static/image/favicon/android-chrome-192x192.png
 // @grant        none
 // @license      MPL-2.0 License
-// @supportURL   https://www.nodeseek.com/post-?-1
-// @homepageURL  https://www.nodeseek.com/post-?-1
+// @supportURL   https://www.nodeseek.com/post-68803-1
+// @homepageURL  https://www.nodeseek.com/post-68803-1
 // @downloadURL  https://update.greasyfork.org/scripts/487482/NodeSeek%20%E8%A1%A8%E6%83%85%E5%8C%85%E5%A2%9E%E5%BC%BA.user.js
 // @updateURL    https://update.greasyfork.org/scripts/487482/NodeSeek%20%E8%A1%A8%E6%83%85%E5%8C%85%E5%A2%9E%E5%BC%BA.meta.js
 // ==/UserScript==
