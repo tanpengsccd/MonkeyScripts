@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 表情包增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.1
+// @version      0.0.2
 // @description  为 NodeSeek 添加更多表情包
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -10,17 +10,19 @@
 // @license      MPL-2.0 License
 // @supportURL   https://www.nodeseek.com/post-?-1
 // @homepageURL  https://www.nodeseek.com/post-?-1
-// @downloadURL  https://update.greasyfork.org/scripts/?/?.user.js
-// @updateURL    https://update.greasyfork.org/scripts/?/?.meta.js
+// @downloadURL  https://update.greasyfork.org/scripts/487482/NodeSeek%20%E8%A1%A8%E6%83%85%E5%8C%85%E5%A2%9E%E5%BC%BA.user.js
+// @updateURL    https://update.greasyfork.org/scripts/487482/NodeSeek%20%E8%A1%A8%E6%83%85%E5%8C%85%E5%A2%9E%E5%BC%BA.meta.js
 // ==/UserScript==
 
 (function () {
     'use strict';
 
     // 自定义表情包数据
+    // 内置的表情包来自 https://github.com/lrhtony/BiliEmoji 
+    // 添加其它自定义表情包请参照以下格式
     const customEmotionList = {
-        "2233娘": { "name": "2233娘", "type": "png", "icon": "icon", "items": ["2233娘-大笑", "2233娘-吃惊", "2233娘-大哭", "2233娘-耶", "2233娘-卖萌", "2233娘-疑问", "2233娘-汗", "2233娘-困惑", "2233娘-怒", "2233娘-委屈", "2233娘-郁闷", "2233娘-第一", "2233娘-喝水", "2233娘-吐魂", "2233娘-无言"] },
-        "小电视": { "name": "小电视", "type": "png", "icon": "icon", "items": ["小电视-笑", "小电视-发愁", "小电视-赞", "小电视-差评", "小电视-嘟嘴", "小电视-汗", "小电视-害羞", "小电视-吃惊", "小电视-哭泣", "小电视-太太喜欢", "小电视-好怒啊", "小电视-困惑", "小电视-我好兴奋", "小电视-思索", "小电视-无语"] }
+        "2233娘": { "name": "2233娘", "type": "png", "icon": "icon", "items": ["2233娘-大笑", "2233娘-吃惊", "2233娘-大哭", "2233娘-耶", "2233娘-卖萌", "2233娘-疑问", "2233娘-汗", "2233娘-困惑", "2233娘-怒", "2233娘-委屈", "2233娘-郁闷", "2233娘-第一", "2233娘-喝水", "2233娘-吐魂", "2233娘-无言"], "baseUrl": "https://emoji.shojo.cn/bili/src/2233娘/" },
+        "小电视": {"name": "小电视", "type": "gif", "icon": "icon", "items": ["tvgif-白眼", "tvgif-doge", "tvgif-坏笑", "tvgif-难过", "tvgif-生气", "tvgif-委屈", "tvgif-斜眼笑", "tvgif-呆", "tvgif-发怒", "tvgif-惊吓", "tvgif-呕吐", "tvgif-思考", "tvgif-微笑", "tvgif-疑问", "tvgif-大哭", "tvgif-鼓掌", "tvgif-抠鼻", "tvgif-亲亲", "tvgif-调皮", "tvgif-笑哭", "tvgif-晕", "tvgif-点赞", "tvgif-害羞", "tvgif-睡着", "tvgif-色", "tvgif-吐血", "tvgif-无奈", "tvgif-再见", "tvgif-流汗", "tvgif-偷笑", "tvgif-抓狂", "tvgif-黑人问号", "tvgif-困", "tvgif-打脸", "tvgif-闭嘴", "tvgif-鄙视", "tvgif-腼腆", "tvgif-馋", "tvgif-可爱", "tvgif-发财", "tvgif-生病", "tvgif-流鼻血", "tvgif-尴尬", "tvgif-大佬"], "baseUrl": "https://emoji.shojo.cn/bili/src/tv_小电视_动图/" }
     };
 
     // 页面加载完毕后初始化自定义表情包
@@ -47,6 +49,7 @@
         newDiv.id = `custom-emotion-${key}`;
         newDiv.classList.add('custom-emotion');
         newDiv.innerHTML = `&nbsp;${customEmotionList[key].name}&nbsp;`;
+        newDiv.style.cursor = 'pointer';
         addHoverEffect(newDiv);
         return newDiv;
     }
@@ -94,8 +97,8 @@
                     if (containerDiv.classList.contains('open')) { // 判断官方表情包是否已经关闭
                         return; // 关不掉就别干了吧
                         // TODO: 一个更好的方法避免这俩共存
-                    } else
-                        updateEmotionDisplay(clickedItem, containerDiv);
+                    }
+                    updateEmotionDisplay(clickedItem, containerDiv);
                 }, 500);
             } else
                 updateEmotionDisplay(clickedItem, containerDiv);
@@ -132,7 +135,7 @@
 
         pack.items.forEach(item => {
             const img = document.createElement('img');
-            img.src = `https://emoji.shojo.cn/bili/src/${packKey}/${item}.${pack.type}`;
+            img.src = `${pack.baseUrl}/${item}.${pack.type}`;
             img.alt = item;
             img.className = "sticker";
             img.style.maxWidth = "90px";
@@ -142,12 +145,6 @@
         // 给表情包图片添加点击事件
         container.addEventListener('click', (e) => {
             insertToEditor(e.target.src);
-            // const target = e.target;
-            // if (target.tagName === 'IMG') {
-            //     const textarea = document.querySelector('.editor textarea');
-            //     textarea.value += `![${target.alt}](https://emoji.shojo.cn/bili/src/${packKey}/${target.alt}.${pack.type})`;
-            //     textarea.focus();
-            // }
         });
 
         containerDiv.appendChild(container);
