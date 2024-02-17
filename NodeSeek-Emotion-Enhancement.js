@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 表情包增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.4
+// @version      0.0.5
 // @description  为 NodeSeek 添加更多表情包
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
