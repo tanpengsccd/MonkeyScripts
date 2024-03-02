@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.4
+// @version      0.0.5
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.4 - 2024.03.02          !!!更新前注意备份您的配置!!! 
- * - 修改 让图片同步上传, 防止上传后顺序混乱
+ * 0.0.5 - 2024.03.02          !!!更新前注意备份您的配置!!! 
+ * - 修复 尝试修复某些情况下图片按钮替换失败
  */
 
 (function () {
@@ -81,18 +81,15 @@
 
         // 修改图片按钮的行为
         // 图片按钮
-        const oldElement = document.querySelector('.toolbar-item.i-icon.i-icon-pic[title="图片"]');
-
-        if (oldElement) {
-            // 创建一个新元素作为替代
-            const newElement = oldElement.cloneNode(true);
-
-            // 移除旧元素
-            oldElement.parentNode.replaceChild(newElement, oldElement);
-
-            // 为新元素添加点击事件
-            newElement.addEventListener('click', handleImgBtnClick);
-        }
+        let checkExist = setInterval(function() {
+            const oldElement = document.querySelector('.toolbar-item.i-icon.i-icon-pic[title="图片"]');
+            if (oldElement) {
+                clearInterval(checkExist);
+                const newElement = oldElement.cloneNode(true);
+                oldElement.parentNode.replaceChild(newElement, oldElement);
+                newElement.addEventListener('click', handleImgBtnClick);
+            }
+        }, 200);
 
     }
 
