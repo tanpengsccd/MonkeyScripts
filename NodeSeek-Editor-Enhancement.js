@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.2
+// @version      0.0.3
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.2 - 2024.03.02          !!!更新前注意备份您的配置!!! 
- * - 支持 拖放文件上传
+ * 0.0.3 - 2024.03.02          !!!更新前注意备份您的配置!!! 
+ * - 支持 点击图片按钮上传文件
  */
 
 (function () {
@@ -40,8 +40,6 @@
     function initEditorEnhancer() {
         // 监听粘贴事件
         document.addEventListener('paste', (event) => handlePasteEvt(event));
-
-        
 
         // 给编辑器绑定拖拽事件
         var dropZone = document.getElementById('code-mirror-editor');
@@ -80,6 +78,22 @@
                 };
             }));
         });
+
+        // 修改图片按钮的行为
+        // 图片按钮
+        const oldElement = document.querySelector('.toolbar-item.i-icon.i-icon-pic[title="图片"]');
+
+        if (oldElement) {
+            // 创建一个新元素作为替代
+            const newElement = oldElement.cloneNode(true);
+
+            // 移除旧元素
+            oldElement.parentNode.replaceChild(newElement, oldElement);
+
+            // 为新元素添加点击事件
+            newElement.addEventListener('click', handleImgBtnClick);
+        }
+
     }
 
     // 粘贴事件处理
@@ -92,6 +106,32 @@
         }
         uploadImage(items)
     }
+
+    // 图片按钮点击事件处理
+    function handleImgBtnClick() {
+        // 创建一个隐藏的文件输入元素
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true; // 允许多选文件
+        input.accept = 'image/*'; // 仅接受图片文件
+    
+        // 当文件被选择后的处理
+        input.onchange = e => {
+            const files = e.target.files; // 获取用户选择的文件列表
+            if (files.length) {
+                const items = [...files].map(file => ({
+                    kind: 'file',
+                    type: file.type,
+                    getAsFile: () => file
+                }));
+                
+                uploadImage(items);
+            }
+        };
+    
+        // 触发文件输入框的点击事件，打开文件选择窗口
+        input.click();
+    }    
 
     // 处理并上传图片
     function uploadImage(items) {
