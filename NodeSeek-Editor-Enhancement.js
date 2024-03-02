@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.3
+// @version      0.0.4
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
 // @icon         https://www.nodeseek.com/static/image/favicon/android-chrome-192x192.png
 // @grant        GM_xmlhttpRequest
 // @license      MPL-2.0 License
-// @supportURL   https://www.nodeseek.com/post-?-1
-// @homepageURL  https://www.nodeseek.com/post-?-1
+// @supportURL   https://www.nodeseek.com/post-74493-1
+// @homepageURL  https://www.nodeseek.com/post-74493-1
 // @downloadURL  https://update.greasyfork.org/scripts/487553/NodeSeek%20%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA.user.js
 // @updateURL    https://update.greasyfork.org/scripts/487553/NodeSeek%20%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA.meta.js
 // ==/UserScript==
@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.3 - 2024.03.02          !!!更新前注意备份您的配置!!! 
- * - 支持 点击图片按钮上传文件
+ * 0.0.4 - 2024.03.02          !!!更新前注意备份您的配置!!! 
+ * - 修改 让图片同步上传, 防止上传后顺序混乱
  */
 
 (function () {
@@ -134,7 +134,7 @@
     }    
 
     // 处理并上传图片
-    function uploadImage(items) {
+    async function uploadImage(items) {
         let imageFiles = [];
 
         for (let item of items) {
@@ -156,7 +156,7 @@
                 formData.append('file', file);
                 if (imgHost.storageId) formData.append('strategy_id', imgHost.storageId);
                 if (imgHost.type === 'LskyPro') {
-                    uploadToLsky(formData);
+                    await uploadToLsky(formData);
                 } else {
                     log(`暂不支持的图床类型: ${imgHost.type}, 取消上传`, 'red');
                     return;
@@ -168,7 +168,7 @@
         }
     }
 
-    function uploadToLsky(formData) {
+    async function uploadToLsky(formData) {
         return new Promise((resolve, reject) => {
             let headers = {
                 'Accept': 'application/json'
