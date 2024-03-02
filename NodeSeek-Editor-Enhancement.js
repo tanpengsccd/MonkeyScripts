@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.1
+// @version      0.0.2
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.1 - 2024.02.18          !!!更新前注意备份您的配置!!! 
- * - 支持 批量粘贴文件/图片上传图床
+ * 0.0.2 - 2024.03.02          !!!更新前注意备份您的配置!!! 
+ * - 支持 拖放文件上传
  */
 
 (function () {
@@ -35,11 +35,51 @@
     const mdImgName = 0; // 0: 使用图床返回的原始名称, 其他值则名称固定为该值
 
     // 页面加载完毕后载入功能
-    window.addEventListener('load', initCustomEmotions, false);
+    window.addEventListener('load', initEditorEnhancer, false);
 
-    function initCustomEmotions() {
+    function initEditorEnhancer() {
         // 监听粘贴事件
         document.addEventListener('paste', (event) => handlePasteEvt(event));
+
+        
+
+        // 给编辑器绑定拖拽事件
+        var dropZone = document.getElementById('code-mirror-editor');
+        // 阻止默认行为
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'copy'; // 显示为复制图标
+        });
+
+        // 处理文件拖放
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            log('正在处理拖放内容...');
+            let imageFiles = [];
+            for(let file of e.dataTransfer.files) {
+                if (/^image\//i.test(file.type)) { // 确保只处理图片文件
+                    imageFiles.push(file);
+                    log(`拖放的文件名: ${file.name}`);
+                }
+            }
+            log(`拖放的图片数量: ${imageFiles.length}`);
+            if (imageFiles.length === 0) {
+                log('你拖放的内容好像没有图片哦', 'red');
+                return;
+            }
+
+            // 调整uploadImage函数以接受File对象数组而不是DataTransferItemList
+            uploadImage(imageFiles.map(file => {
+                return {
+                    kind: 'file',
+                    type: file.type,
+                    getAsFile: () => file
+                };
+            }));
+        });
     }
 
     // 粘贴事件处理
@@ -136,7 +176,7 @@
                 codeMirrorInstance.replaceRange(`\n${markdownLink} \n`, cursor);
             }
         }
-        if (markdownLink.beginWith('!['))
+        if (markdownLink.startsWith('!['))
             log('图片已插入到编辑器~', 'green');
     }
 
