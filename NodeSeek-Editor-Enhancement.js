@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.5
+// @version      0.0.6
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,21 +18,23 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.5 - 2024.03.02          !!!更新前注意备份您的配置!!! 
- * - 修复 尝试修复某些情况下图片按钮替换失败
+ * 0.0.6 - 2024.03.08          !!!更新前注意备份您的配置!!! 
+ * - 新增 支持 Telegraph 图床
  */
 
 (function () {
     'use strict';
 
     // 图床配置, 默认提供的是这位大佬的 https://www.nodeseek.com/post-38305-1 , 这个图床上传限制 5p / IP / 小时
+    // 当 type 为 LskyPro 时一下所有配置项均有用, 当图床为 Telegraph 时只有 url 有用
+    // Telegraph 官网 https://telegra.ph/ 在大陆被阻断, 可以使用 https://github.com/cf-pages/Telegraph-Image 提供的服务或者自己部署
     const imgHost = {
-        type: "LskyPro", // 图床类型, 暂只支持 LskyPro
+        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph
         url: "https://image.dooo.ng", // 图床地址, 带上协议头
         token: null, // 图床 token, 可选, 不填则为游客上传, 在 /user/tokens 生成
         storageId: null, // 图床存储策略ID, 可选项, 不填则为默认策略, 普通用户可在上传页抓包得到, 管理员可以在后台看到
     };
-    const mdImgName = 0; // 0: 使用图床返回的原始名称, 其他值则名称固定为该值
+    const mdImgName = 0; // 0(仅 LsyPro): 使用图床返回的原始名称, 其他值则名称固定为该值
 
     // 页面加载完毕后载入功能
     window.addEventListener('load', initEditorEnhancer, false);
@@ -151,9 +153,11 @@
                 let file = imageFiles[i];
                 let formData = new FormData();
                 formData.append('file', file);
-                if (imgHost.storageId) formData.append('strategy_id', imgHost.storageId);
                 if (imgHost.type === 'LskyPro') {
+                    if (imgHost.storageId) formData.append('strategy_id', imgHost.storageId);
                     await uploadToLsky(formData);
+                } else if (imgHost.type === 'Telegraph') {
+                    await uploadToTelegraph(formData);
                 } else {
                     log(`暂不支持的图床类型: ${imgHost.type}, 取消上传`, 'red');
                     return;
@@ -190,7 +194,7 @@
                             insertToEditor(mdImgName === 0 ? rspJson.data.links.markdown : `![${mdImgName}](${rspJson.data.links.url})`);
                         else {
                             log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
-                            insertToEditor(`![${file.name}](${rspJson.data.url})`);
+                            insertToEditor(`图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)})`);
                         }
                     } else
                         log(`图片上传失败: ${rspJson.message}`, 'red');
@@ -203,6 +207,40 @@
             });
         });
     }
+
+    async function uploadToTelegraph(formData) {
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: `${imgHost.url}/upload`,
+                data: formData,
+                onload: (rsp) => {
+                    let rspJson = JSON.parse(rsp.responseText);
+                    rspJson = rspJson[0];
+                    if(rsp.status !== 200) {
+                        log(`图片上传失败: ${rsp.status} ${rsp.statusText}`, 'red');
+                        reject(rspJson.message);
+                    }
+                    if (rspJson) {
+                        // 图片上传成功
+                        if(rspJson?.src)
+                            insertToEditor(`![${mdImgName}](${imgHost.url}${rspJson.src})`);
+                        else {
+                            log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
+                            insertToEditor(`图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)})`);
+                        }
+                    } else
+                        log(`图片上传失败: ${JSON.stringify(rspJson)}`, 'red');
+                    resolve();
+                },
+                onerror: (error) => {
+                    log(`图片上传失败: ${error.status} ${error.statusText}`, 'red');
+                    reject(error);
+                }
+            });
+        });
+    }
+
 
     function insertToEditor(markdownLink) {
         const codeMirrorElement = document.querySelector('.CodeMirror');
