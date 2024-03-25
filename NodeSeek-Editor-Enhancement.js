@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.7
+// @version      0.0.8
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.7 - 2024.03.25          !!!更新前注意备份您的配置!!!
- * - 新增 支持 EasyImages 图床
+ * 0.0.8 - 2024.03.25          !!!更新前注意备份您的配置!!!
+ * - 新增 支持 Ctrl+Enter 快捷键提交帖子
  */
 
 (function () {
@@ -36,6 +36,7 @@
         storageId: null, // 图床存储策略ID, 可选项, 不填则为默认策略, 普通用户可在上传页抓包得到, 管理员可以在后台看到
     };
     const mdImgName = 0; // 0(非 Telegraph): 使用图床返回的原始名称, 其他值则名称固定为该值
+    const submitByKey = true; // 是否按下 Ctrl+Enter 后触发发帖动作
 
     // 页面加载完毕后载入功能
     window.addEventListener('load', initEditorEnhancer, false);
@@ -93,6 +94,18 @@
                 newElement.addEventListener('click', handleImgBtnClick);
             }
         }, 200);
+
+        // 监听 Ctrl+Enter 快捷键
+        if (submitByKey)
+            document.addEventListener('keydown', function (event) {
+                if (event.ctrlKey && event.key === 'Enter') {
+                    // 获取按钮元素
+                    const button = document.querySelector('.submit.btn');
+                    // 触发点击事件
+                    button.click();
+
+                }
+            });
 
     }
 
