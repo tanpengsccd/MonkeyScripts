@@ -47,20 +47,20 @@
         // 给编辑器绑定拖拽事件
         var dropZone = document.getElementById('code-mirror-editor');
         // 阻止默认行为
-        dropZone.addEventListener('dragover', function(e) {
+        dropZone.addEventListener('dragover', function (e) {
             e.preventDefault();
             e.stopPropagation();
             e.dataTransfer.dropEffect = 'copy'; // 显示为复制图标
         });
 
         // 处理文件拖放
-        dropZone.addEventListener('drop', function(e) {
+        dropZone.addEventListener('drop', function (e) {
             e.preventDefault();
             e.stopPropagation();
 
             log('正在处理拖放内容...');
             let imageFiles = [];
-            for(let file of e.dataTransfer.files) {
+            for (let file of e.dataTransfer.files) {
                 if (/^image\//i.test(file.type)) { // 确保只处理图片文件
                     imageFiles.push(file);
                     log(`拖放的文件名: ${file.name}`);
@@ -84,7 +84,7 @@
 
         // 修改图片按钮的行为
         // 图片按钮
-        let checkExist = setInterval(function() {
+        let checkExist = setInterval(function () {
             const oldElement = document.querySelector('.toolbar-item.i-icon.i-icon-pic[title="图片"]');
             if (oldElement) {
                 clearInterval(checkExist);
@@ -114,7 +114,7 @@
         input.type = 'file';
         input.multiple = true; // 允许多选文件
         input.accept = 'image/*'; // 仅接受图片文件
-    
+
         // 当文件被选择后的处理
         input.onchange = e => {
             const files = e.target.files; // 获取用户选择的文件列表
@@ -124,14 +124,14 @@
                     type: file.type,
                     getAsFile: () => file
                 }));
-                
+
                 uploadImage(items);
             }
         };
-    
+
         // 触发文件输入框的点击事件，打开文件选择窗口
         input.click();
-    }    
+    }
 
     // 处理并上传图片
     async function uploadImage(items) {
@@ -147,7 +147,7 @@
         if (imageFiles.length > 0) {
             event.preventDefault();
             for (let i = 0; i < imageFiles.length; i++) {
-                if (imageFiles.length >1)
+                if (imageFiles.length > 1)
                     log(`上传第 ${i + 1} / ${imageFiles.length} 张图片...`);
                 else
                     log(`上传图片...`);
@@ -166,7 +166,7 @@
                     return;
                 }
             }
-            
+
         } else {
             log('你粘贴的内容好像没有图片哦', 'red');
         }
@@ -179,7 +179,7 @@
             };
             if (imgHost.token)
                 headers['Authorization'] = `Bearer ${imgHost.token}`;
-            
+
             GM_xmlhttpRequest({
                 method: 'POST',
                 url: `${imgHost.url}/api/v1/upload`,
@@ -187,13 +187,13 @@
                 data: formData,
                 onload: (rsp) => {
                     let rspJson = JSON.parse(rsp.responseText);
-                    if(rsp.status !== 200) {
+                    if (rsp.status !== 200) {
                         log(`图片上传失败: ${rsp.status} ${rsp.statusText}`, 'red');
                         reject(rspJson.message);
                     }
                     if (rspJson.status === true) {
                         // 图片上传成功
-                        if(rspJson?.data?.links?.markdown)
+                        if (rspJson?.data?.links?.markdown)
                             insertToEditor(mdImgName === 0 ? rspJson.data.links.markdown : `![${mdImgName}](${rspJson.data.links.url})`);
                         else {
                             log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
@@ -220,13 +220,13 @@
                 onload: (rsp) => {
                     let rspJson = JSON.parse(rsp.responseText);
                     rspJson = rspJson[0];
-                    if(rsp.status !== 200) {
+                    if (rsp.status !== 200) {
                         log(`图片上传失败: ${rsp.status} ${rsp.statusText}`, 'red');
                         reject(rspJson.message);
                     }
                     if (rspJson) {
                         // 图片上传成功
-                        if(rspJson?.src)
+                        if (rspJson?.src)
                             insertToEditor(`![${mdImgName}](${imgHost.url}${rspJson.src})`);
                         else {
                             log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
@@ -248,7 +248,7 @@
         return new Promise((resolve, reject) => {
             let url = imgHost.url;
             let formData = new FormData();
-            if(imgHost.token) {
+            if (imgHost.token) {
                 // 带token, 使用后端接口上传
                 url += '/api/index.php'
                 formData.append('token', imgHost.token);
@@ -268,13 +268,13 @@
                 data: formData,
                 onload: (rsp) => {
                     let rspJson = JSON.parse(rsp.responseText);
-                    if(rsp.status !== 200) {
+                    if (rsp.status !== 200) {
                         log(`图片上传失败: ${rsp.status} ${rsp.statusText}`, 'red');
                         reject(rspJson.result);
                     }
                     if (rspJson.code === 200) {
                         // 图片上传成功
-                        if(rspJson?.url)
+                        if (rspJson?.url)
                             insertToEditor(`[${(mdImgName === 0 ? rspJson.srcName : mdImgName)}](${rspJson.url})`);
                         else {
                             log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
@@ -308,7 +308,7 @@
 
     // 在编辑器打印日志
     function log(message, color = '') {
-        if(!document.getElementById('editor-enhance-logs')) {
+        if (!document.getElementById('editor-enhance-logs')) {
             initEditorLogDiv();
         }
         const logDiv = document.getElementById('editor-enhance-logs');
