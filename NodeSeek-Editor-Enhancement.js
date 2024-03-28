@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.8
+// @version      0.0.8R
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.8 - 2024.03.25          !!!更新前注意备份您的配置!!!
- * - 新增 支持 Ctrl+Enter 快捷键提交帖子
+ * 0.0.8R - 2024.03.28          !!!更新前注意备份您的配置!!!
+ * - 修复 错误的 markdown 图片标记
  */
 
 (function () {
@@ -288,7 +288,7 @@
                     if (rspJson.code === 200) {
                         // 图片上传成功
                         if (rspJson?.url)
-                            insertToEditor(`[${(mdImgName === 0 ? rspJson.srcName : mdImgName)}](${rspJson.url})`);
+                            insertToEditor(`![${(mdImgName === 0 ? rspJson.srcName : mdImgName)}](${rspJson.url})`);
                         else {
                             log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
                             insertToEditor(`图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)})`);
