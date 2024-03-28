@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.8R
+// @version      0.0.9
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,7 +18,7 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.8R - 2024.03.28          !!!更新前注意备份您的配置!!!
+ * 0.0.9 - 2024.03.28          !!!更新前注意备份您的配置!!!
  * - 修复 错误的 markdown 图片标记
  */
 
