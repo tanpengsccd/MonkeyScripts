@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.9
+// @version      0.0.10
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
@@ -18,21 +18,21 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.9 - 2024.03.28          !!!更新前注意备份您的配置!!!
- * - 修复 错误的 markdown 图片标记
+ * 0.0.10 - 2024.08.11          !!!更新前注意备份您的配置!!!
+ * - 新增 支持 Chevereto 图床
  */
 
 (function () {
     'use strict';
 
     // 图床配置, 默认提供的是这位大佬的 https://www.nodeseek.com/post-38305-1 , 这个图床上传限制 5p / IP / 小时
-    // 当 type 为 LskyPro 时以下所有配置项均有用, 为 Telegraph / EasyImages 时只有 url 有用
+    // 当 type 为 LskyPro 时以下所有配置项均有用, 为 Chevereto 时 url 和 token 有用, 为 Telegraph / EasyImages 时只有 url 有用
     // Telegraph 官网 https://telegra.ph/ 在大陆被阻断, 可以使用 https://github.com/cf-pages/Telegraph-Image 提供的服务或者自己部署
     // EasyImages 官网 https://png.cm/ 限制单 ip 每天上传 3 张, 项目地址 https://github.com/icret/EasyImages2.0, 这个图床真烂, 两套接口不统一下, 文档也不写几句话
     const imgHost = {
-        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / EasyImages
+        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / Chevereto / EasyImages
         url: "https://image.dooo.ng", // 图床地址, 带上协议头
-        token: null, // 图床 token, 可选, 不填则为游客上传, LskyPro 在 /user/tokens 生成, EasyImages 填写则使用后端接口上传, 不填写则使用前端接口上传
+        token: null, // 图床 token, 可选, 不填则为游客上传, LskyPro 在 /user/tokens 生成, Chevereto 必填, 在 /settings/api 生成, EasyImages 填写则使用后端接口上传, 不填写则使用前端接口上传
         storageId: null, // 图床存储策略ID, 可选项, 不填则为默认策略, 普通用户可在上传页抓包得到, 管理员可以在后台看到
     };
     const mdImgName = 0; // 0(非 Telegraph): 使用图床返回的原始名称, 其他值则名称固定为该值
@@ -172,6 +172,8 @@
                     await uploadToLsky(formData);
                 } else if (imgHost.type === 'Telegraph') {
                     await uploadToTelegraph(formData);
+                } else if (imgHost.type === 'Chevereto') {
+                    await uploadToChevereto(file);
                 } else if (imgHost.type === 'EasyImages') {
                     await uploadToEasyImages(file);
                 } else {
@@ -247,6 +249,52 @@
                         }
                     } else
                         log(`图片上传失败: ${JSON.stringify(rspJson)}`, 'red');
+                    resolve();
+                },
+                onerror: (error) => {
+                    log(`图片上传失败: ${error.status} ${error.statusText}`, 'red');
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    async function uploadToChevereto(file) {
+        return new Promise((resolve, reject) => {
+            let headers = {
+                'Accept': 'application/json'
+            };
+            if (!imgHost.token) {
+                log('Chevereto 图床需配置 token', 'red');
+                reject('Chevereto 图床需要 token, 请填写 token 后重试');
+                return;
+            }
+            headers['X-API-Key'] = imgHost.token;
+            let formData = new FormData();
+            formData.append('source', file);
+
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: `${imgHost.url}/api/1/upload`,
+                headers: headers,
+                data: formData,
+                onload: (rsp) => {
+                    let rspJson = JSON.parse(rsp.responseText);
+                    if (rsp.status !== 200) {
+                        log(`图片上传失败: ${rsp.status} ${rsp.statusText}`, 'red');
+                        reject(rspJson?.success?.message || rspJson?.error?.message);
+                    }
+                    if (rspJson.status_code === 200) {
+                        // 图片上传成功
+                        let imgUrl = rspJson.image.url || rspJson.image.url_viewer || rspJson.image.url_short;
+                        if (imgUrl)
+                            insertToEditor(mdImgName === 0 ? `![${rspJson.image.filename}](${imgUrl})` : `![${mdImgName}](${imgUrl})`);
+                        else {
+                            log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
+                            insertToEditor(`图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)})`);
+                        }
+                    } else
+                        log(`图片上传失败: ${rspJson?.success?.message || rspJson?.error?.message}`, 'red');
                     resolve();
                 },
                 onerror: (error) => {
