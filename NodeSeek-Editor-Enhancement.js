@@ -18,8 +18,8 @@
  * 
  * 
  * 当前版本更新日志
- * 0.0.10 - 2024.08.11          !!!更新前注意备份您的配置!!!
- * - 新增 支持 Chevereto 图床
+ * 0.0.11 - 2024.10.05          !!!更新前注意备份您的配置!!!
+ * - 新增 支持 0-RTT/telegraph 项目
  */
 
 (function () {
@@ -28,9 +28,10 @@
     // 图床配置, 默认提供的是这位大佬的 https://www.nodeseek.com/post-38305-1 , 这个图床上传限制 5p / IP / 小时
     // 当 type 为 LskyPro 时以下所有配置项均有用, 为 Chevereto 时 url 和 token 有用, 为 Telegraph / EasyImages 时只有 url 有用
     // Telegraph 官网 https://telegra.ph/ 在大陆被阻断, 可以使用 https://github.com/cf-pages/Telegraph-Image 提供的服务或者自己部署
+    // Telegraph2 by @Xiefengshang 使用的是 https://github.com/0-RTT/telegraph 项目(个人考虑到其缓存做的更好所以使用)
     // EasyImages 官网 https://png.cm/ 限制单 ip 每天上传 3 张, 项目地址 https://github.com/icret/EasyImages2.0, 这个图床真烂, 两套接口不统一下, 文档也不写几句话
     const imgHost = {
-        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / Chevereto / EasyImages
+        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / Telegraph2 / Chevereto / EasyImages
         url: "https://image.dooo.ng", // 图床地址, 带上协议头
         token: null, // 图床 token, 可选, 不填则为游客上传, LskyPro 在 /user/tokens 生成, Chevereto 必填, 在 /settings/api 生成, EasyImages 填写则使用后端接口上传, 不填写则使用前端接口上传
         storageId: null, // 图床存储策略ID, 可选项, 不填则为默认策略, 普通用户可在上传页抓包得到, 管理员可以在后台看到
@@ -172,6 +173,8 @@
                     await uploadToLsky(formData);
                 } else if (imgHost.type === 'Telegraph') {
                     await uploadToTelegraph(formData);
+                } else if (imgHost.type === 'Telegraph2') {
+                    await uploadToTelegraph2(formData);
                 } else if (imgHost.type === 'Chevereto') {
                     await uploadToChevereto(file);
                 } else if (imgHost.type === 'EasyImages') {
@@ -250,6 +253,41 @@
                     } else
                         log(`图片上传失败: ${JSON.stringify(rspJson)}`, 'red');
                     resolve();
+                },
+                onerror: (error) => {
+                    log(`图片上传失败: ${error.status} ${error.statusText}`, 'red');
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    async function uploadToTelegraph2(formData) {
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: `${imgHost.url}/upload`,
+                data: formData,
+                onload: (rsp) => {
+                    let rspJson = JSON.parse(rsp.responseText);
+
+                    if (rsp.status !== 200 || !rspJson || !rspJson.data) {
+                        log(`图片上传失败: ${rsp.status} ${rsp.statusText}`, 'red');
+                        reject(rspJson?.message || '图片上传失败，缺少 data 字段');
+                    }
+
+                    const result = rspJson.data;
+
+                    // 图片上传成功
+                    if (result) {
+                        insertToEditor(`![${mdImgName}](${result})`);
+                        log('图片上传成功');
+                        resolve(result);
+                    } else {
+                        log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
+                        insertToEditor(`图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)}`);
+                        resolve();
+                    }
                 },
                 onerror: (error) => {
                     log(`图片上传失败: ${error.status} ${error.statusText}`, 'red');
