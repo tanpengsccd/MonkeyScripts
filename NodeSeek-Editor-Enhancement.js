@@ -31,7 +31,7 @@
     // Telegraph2 使用的是 https://github.com/0-RTT/telegraph 项目(个人考虑到其缓存做的更好所以使用)
     // EasyImages 官网 https://png.cm/ 限制单 ip 每天上传 3 张, 项目地址 https://github.com/icret/EasyImages2.0, 这个图床真烂, 两套接口不统一下, 文档也不写几句话
     const imgHost = {
-        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / Chevereto / EasyImages
+        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / Telegraph2 / Chevereto / EasyImages
         url: "https://image.dooo.ng", // 图床地址, 带上协议头
         token: null, // 图床 token, 可选, 不填则为游客上传, LskyPro 在 /user/tokens 生成, Chevereto 必填, 在 /settings/api 生成, EasyImages 填写则使用后端接口上传, 不填写则使用前端接口上传
         storageId: null, // 图床存储策略ID, 可选项, 不填则为默认策略, 普通用户可在上传页抓包得到, 管理员可以在后台看到
