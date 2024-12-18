@@ -1,23 +1,26 @@
 // ==UserScript==
 // @name         NodeSeek 编辑器增强
 // @namespace    https://www.nodeseek.com/
-// @version      0.0.10
+// @version      0.1.00
 // @description  为 NodeSeek 编辑器增加图片上传功能
 // @author       TomyJan
 // @match        *://www.nodeseek.com/*
+// @match        *://hostloc.com/*
 // @icon         https://www.nodeseek.com/static/image/favicon/android-chrome-192x192.png
 // @grant        GM_xmlhttpRequest
 // @license      MPL-2.0 License
 // @supportURL   https://www.nodeseek.com/post-74493-1
 // @homepageURL  https://www.nodeseek.com/post-74493-1
-// @downloadURL  https://update.greasyfork.org/scripts/487553/NodeSeek%20%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA.user.js
-// @updateURL    https://update.greasyfork.org/scripts/487553/NodeSeek%20%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA.meta.js
+// @downloadURL https://update.greasyfork.org/scripts/487553/NodeSeek%20%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA.user.js
+// @updateURL https://update.greasyfork.org/scripts/487553/NodeSeek%20%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA.meta.js
 // ==/UserScript==
 
 /**
- * 
- * 
+ *
+ *
  * 当前版本更新日志
+ * 0.0.11 - 2024.12.18          !!!更新前注意备份您的配置!!!
+ * - 新增 支持 HOSTLOC
  * 0.0.11 - 2024.10.05          !!!更新前注意备份您的配置!!!
  * - 新增 支持 0-RTT/telegraph 项目
  */
@@ -31,8 +34,8 @@
     // Telegraph2 by @Xiefengshang 使用的是 https://github.com/0-RTT/telegraph 项目(个人考虑到其缓存做的更好所以使用)
     // EasyImages 官网 https://png.cm/ 限制单 ip 每天上传 3 张, 项目地址 https://github.com/icret/EasyImages2.0, 这个图床真烂, 两套接口不统一下, 文档也不写几句话
     const imgHost = {
-        type: "LskyPro", // 图床类型, 支持 LskyPro / Telegraph / Telegraph2 / Chevereto / EasyImages
-        url: "https://image.dooo.ng", // 图床地址, 带上协议头
+        type: "Telegraph2", // 图床类型, 支持 LskyPro / Telegraph / Telegraph2 / Chevereto / EasyImages
+        url: "https://pic.j8.work", // 图床地址, 带上协议头
         token: null, // 图床 token, 可选, 不填则为游客上传, LskyPro 在 /user/tokens 生成, Chevereto 必填, 在 /settings/api 生成, EasyImages 填写则使用后端接口上传, 不填写则使用前端接口上传
         storageId: null, // 图床存储策略ID, 可选项, 不填则为默认策略, 普通用户可在上传页抓包得到, 管理员可以在后台看到
     };
@@ -47,7 +50,7 @@
         document.addEventListener('paste', (event) => handlePasteEvt(event));
 
         // 给编辑器绑定拖拽事件
-        var dropZone = document.getElementById('code-mirror-editor');
+        var dropZone = document.getElementById('code-mirror-editor') || document.getElementById('postbox');
         // 阻止默认行为
         dropZone.addEventListener('dragover', function (e) {
             e.preventDefault();
@@ -280,12 +283,14 @@
 
                     // 图片上传成功
                     if (result) {
-                        insertToEditor(`![${mdImgName}](${result})`);
-                        log('图片上传成功');
+
+                        insertToCursor(`${result}`, `${mdImgName}`);
+                        log('图片上传成功', 'green');
                         resolve(result);
                     } else {
                         log('图片上传成功, 但接口返回有误, 原始返回已粘贴到编辑器', 'red');
-                        insertToEditor(`图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)}`);
+
+                        insertToCursor(null, null, `图片上传成功, 但接口返回有误: ${JSON.stringify(rspJson)}`)
                         resolve();
                     }
                 },
@@ -391,17 +396,52 @@
         });
     }
 
-
-    function insertToEditor(markdownLink) {
+    function insertToCursor(sourceUrl, sourceName, errorString) {
         const codeMirrorElement = document.querySelector('.CodeMirror');
-        if (codeMirrorElement) {
+        const discuzEditorTextarea = document.querySelector('#e_textarea');
+
+
+        if (codeMirrorElement) { // nodeseek 使用markdown语法
+            const fullLink = `![${sourceName}](${sourceUrl})`
             const codeMirrorInstance = codeMirrorElement.CodeMirror;
             if (codeMirrorInstance) {
                 const cursor = codeMirrorInstance.getCursor();
-                codeMirrorInstance.replaceRange(`\n${markdownLink} \n`, cursor);
+
+                codeMirrorInstance.replaceRange(`\n${fullLink} \n`, cursor);
+            }
+        } else if (discuzEditorTextarea) { //discuz 使用 BBS code语法
+            const fullLink = `[img]${sourceUrl}[/img]`
+            const cursorPosition = discuzEditorTextarea.selectionStart; // 获取光标位置
+            const textBefore = discuzEditorTextarea.value.substring(0, cursorPosition); // 光标前的文本
+            const textAfter = discuzEditorTextarea.value.substring(cursorPosition); // 光标后的文本
+
+            const markdownLink = fullLink; // 你要插入的内容
+            discuzEditorTextarea.value = `${textBefore}${markdownLink}${textAfter}`; // 拼接插入的文本
+
+            // 更新光标位置到插入文本的末尾
+            discuzEditorTextarea.selectionStart = discuzEditorTextarea.selectionEnd = cursorPosition + markdownLink.length;
+
+            // 让光标保持在文本框中
+            discuzEditorTextarea.focus();
+        } else {
+            log('出现错误: 未找到编辑栏', 'red');
+        }
+
+    }
+
+    function insertToEditor(fullLink, sourceName, sourceUrl) {
+
+        const codeMirrorElement = document.querySelector('.CodeMirror');
+
+        if (codeMirrorElement) { // nodeseek 使用markdown语法
+            // nodeseek 还是用老逻辑 完整链接
+            const codeMirrorInstance = codeMirrorElement.CodeMirror;
+            if (codeMirrorInstance) {
+                const cursor = codeMirrorInstance.getCursor();
+                codeMirrorInstance.replaceRange(`\n${fullLink} \n`, cursor);
             }
         }
-        if (markdownLink.startsWith('!['))
+        if (fullLink.startsWith('!['))
             log('图片已插入到编辑器~', 'green');
     }
 
@@ -423,7 +463,7 @@
         logDiv.innerHTML = '';
         document.body.appendChild(logDiv);
 
-        const editorToolbarDiv = document.querySelector('.mde-toolbar');
+        const editorToolbarDiv = document.querySelector('.mde-toolbar') || document.querySelector('#e_controls');
         editorToolbarDiv.appendChild(logDiv);
     }
 
